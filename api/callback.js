@@ -1,25 +1,25 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { code } = req.query;
-  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
   const response = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ client_id: GITHUB_CLIENT_ID, client_secret: GITHUB_CLIENT_SECRET, code }),
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
   });
 
   const data = await response.json();
 
   if (data.access_token) {
-    const script = `
-      <script>
-        const msg = JSON.stringify({ token: "${data.access_token}", provider: "github" });
-        window.opener.postMessage('authorization:github:success:' + msg, '*');
-        window.close();
-      </script>`;
+    const script = `<script>
+      const msg = JSON.stringify({ token: "${data.access_token}", provider: "github" });
+      window.opener.postMessage('authorization:github:success:' + msg, '*');
+      window.close();
+    <\/script>`;
     res.setHeader('Content-Type', 'text/html');
     res.send(script);
   } else {
     res.status(400).send('OAuth error: ' + JSON.stringify(data));
   }
-}
+};
